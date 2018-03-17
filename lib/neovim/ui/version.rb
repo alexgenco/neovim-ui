@@ -1,5 +1,5 @@
 module Neovim
-  module UI
+  class UI
     VERSION = "0.1.0"
   end
 end
