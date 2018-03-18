@@ -2,6 +2,7 @@ require "neovim"
 require "neovim/event_loop"
 require "neovim/executable"
 require "neovim/session"
+require "neovim/ui/event"
 require "io/console"
 require "thread"
 
@@ -22,10 +23,24 @@ module Neovim
 
         session.request(:nvim_ui_attach, *@dimensions, {})
 
-        neovim_event_thread = Thread.new { neovim_event_loop(session) }
-        user_input_thread = Thread.new { user_input_loop }
+        Thread.new do
+          session.run do |message|
+            event = Event.redraw(message)
+            @event_queue.enq(event)
+          end
+        end
 
-        handle_events(session)
+        Thread.new do
+          loop do
+            event = Event.input(@input.getc)
+            @event_queue.enq(event)
+          end
+        end
+
+        loop do
+          event = @event_queue.deq
+          event.received(@handlers, session)
+        end
       end
     end
 
@@ -36,33 +51,6 @@ module Neovim
         @input.raw(&block)
       else
         block.call
-      end
-    end
-
-    def neovim_event_loop(session)
-      session.run do |message|
-        @event_queue.enq(message)
-      end
-    end
-
-    def user_input_loop
-      loop do
-        @event_queue.enq(@input.getc)
-      end
-    end
-
-    def handle_events(session)
-      loop do
-        @event_queue.deq.tap do |message|
-          if message.respond_to?(:method_name)
-            @handlers[message.method_name.to_sym].each do |handler|
-              handler.call(message)
-            end
-          else
-            @handlers[:input].each { |handler| handler.call(message) }
-            session.notify(:nvim_input, message)
-          end
-        end
       end
     end
   end
