@@ -10,12 +10,18 @@ RSpec.describe Neovim do
     rd, wr = IO.pipe
 
     ui = Neovim.ui do |ui|
-      ui.input = rd
       ui.dimensions = [10, 10]
-      ui.child_args = ["nvim", "--embed"]
 
-      ui.on(:redraw) do |event|
-        Fiber.yield(:redraw, event)
+      ui.backend do |backend|
+        backend.attach_child(["nvim", "-u", "NONE", "--embed"])
+      end
+
+      ui.frontend do |frontend|
+        frontend.attach(rd)
+      end
+
+      ui.on(:redraw) do |message|
+        Fiber.yield(:redraw, message)
       end
 
       ui.on(:input) do |key|
