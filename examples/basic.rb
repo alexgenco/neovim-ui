@@ -7,10 +7,6 @@ Neovim.ui do |ui|
   ui.dimensions = [10, 10]
   ui.child_args = ["nvim", "--embed"]
 
-  ui.on(:*) do |message|
-    $logger.debug("Got #{message.method_name}: #{message.arguments}")
-  end
-
   ui.on(:redraw) do |message|
     $logger.debug("Got redraw: #{message.arguments}")
   end

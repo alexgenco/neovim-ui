@@ -16,7 +16,7 @@ module Neovim
     end
 
     def run
-      @input.raw do
+      raw_tty do
         event_loop = EventLoop.child(@child_args)
         session = Session.new(event_loop)
 
@@ -30,6 +30,14 @@ module Neovim
     end
 
     private
+
+    def raw_tty(&block)
+      if @input.tty? && @input.respond_to?(:raw)
+        @input.raw(&block)
+      else
+        block.call
+      end
+    end
 
     def neovim_event_loop(session)
       session.run do |message|
@@ -47,7 +55,7 @@ module Neovim
       loop do
         @event_queue.deq.tap do |message|
           if message.respond_to?(:method_name)
-            (@handlers[message.method_name.to_sym] + @handlers[:*]).each do |handler|
+            @handlers[message.method_name.to_sym].each do |handler|
               handler.call(message)
             end
           else
