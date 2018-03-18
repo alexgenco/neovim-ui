@@ -5,9 +5,10 @@ require "io/console"
 module Neovim
   class UI
     class Builder < BasicObject
-      attr_writer :dimensions, :child_args
+      attr_writer :input, :dimensions, :child_args
 
       def initialize(&block)
+        @input = ::STDIN
         @dimensions = ::IO.console.winsize
         @child_args = [::Neovim::Executable.from_env.path]
         @handlers = ::Hash.new { |hash, key| hash[key] = [] }
@@ -22,7 +23,7 @@ module Neovim
       private
 
       def build
-        UI.new(@dimensions, @child_args, @handlers)
+        UI.new(@input, @dimensions, @child_args, @handlers)
       end
     end
   end

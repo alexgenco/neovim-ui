@@ -6,16 +6,19 @@ RSpec.describe Neovim do
       event = nil
 
       ui = Neovim.ui do |ui|
+        ui.input = STDIN
         ui.dimensions = [10, 10]
         ui.child_args = ["nvim", "--embed"]
 
-        ui.on(:redraw) do |redraw_event, session|
+        ui.on(:redraw) do |redraw_event|
           event = redraw_event
-          session.shutdown
+          throw(:done)
         end
       end
 
-      ui.run
+      catch(:done) do
+        ui.run
+      end
 
       expect(event.method_name).to eq("redraw")
       expect(event.arguments).to respond_to(:to_ary)
