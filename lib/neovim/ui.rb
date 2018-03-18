@@ -44,6 +44,8 @@ module Neovim
           end
         end
       end
+    rescue IOError => e
+      warn "Got #{e}, exiting."
     end
   end
 end
