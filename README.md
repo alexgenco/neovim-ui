@@ -1,8 +1,8 @@
 # Neovim::UI
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/neovim/ui`. To experiment with that code, run `bin/console` for an interactive prompt.
+An framework for building Neovim UI frontends in Ruby.
 
-TODO: Delete this and the text above, and describe your gem
+(This is only an experiment for now)
 
 ## Installation
 
@@ -22,7 +22,7 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+See [examples](examples/).
 
 ## Development
 
