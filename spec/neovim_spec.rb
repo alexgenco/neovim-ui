@@ -1,4 +1,3 @@
-require "spec_helper"
 require "fileutils"
 require "socket"
 require "timeout"
