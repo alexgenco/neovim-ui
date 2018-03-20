@@ -48,6 +48,24 @@ module Neovim
           end
         end
 
+        def attach_unix(socket_path)
+          @session_builder = lambda do |&block|
+            event_loop = EventLoop.unix(socket_path)
+            session = Session.new(event_loop)
+
+            block.call(session)
+          end
+        end
+
+        def attach_tcp(host, port)
+          @session_builder = lambda do |&block|
+            event_loop = EventLoop.tcp(host, port)
+            session = Session.new(event_loop)
+
+            block.call(session)
+          end
+        end
+
         private
 
         attr_reader :session_builder
