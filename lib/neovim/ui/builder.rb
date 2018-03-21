@@ -9,15 +9,18 @@ module Neovim
 
       def initialize(&block)
         @dimensions = ::IO.console.winsize
-        @handlers = ::Hash.new { |hash, key| hash[key] = [] }
         @session_builder = ->() { raise("Must configure a backend") }
         @input_builder = ->() { raise("Must configure a frontend") }
+
+        @handlers = ::Hash.new do |hash, key|
+          hash[key] = ::Hash.new { |h, k| h[k] = [] }
+        end
 
         yield self
       end
 
-      def on(event, &block)
-        @handlers[event.to_sym] << block
+      def on(event, name=:__all__, &block)
+        @handlers[event.to_sym][name.to_sym] << block
       end
 
       def backend(&block)

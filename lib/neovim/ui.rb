@@ -26,20 +26,18 @@ module Neovim
 
           Thread.new do
             session.run do |message|
-              event = Event.redraw_batch(message, @handlers)
-              @queue.enq(event)
+              @queue << Event.redraw_batch(message, @handlers)
             end
           end
 
           Thread.new do
             loop do
-              event = Event.input(input.getc, @handlers)
-              @queue.enq(event)
+              @queue << Event.input(input.getc, @handlers)
             end
           end
 
           loop do
-            @queue.deq.call(session)
+            @queue.pop.call(session)
           end
         end
       end
