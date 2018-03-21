@@ -1,6 +1,5 @@
 require "fileutils"
 require "socket"
-require "timeout"
 
 RSpec.describe Neovim do
   describe ".ui" do
@@ -8,54 +7,49 @@ RSpec.describe Neovim do
       let(:pipe) { IO.pipe }
       let(:rd) { pipe[0] }
       let(:wr) { pipe[1] }
-      let(:fiber) { Fiber.new { ui.run } }
 
-      let(:ui) do
-        Neovim.ui do |ui|
-          ui.dimensions = [10, 10]
+      let(:events) do
+        Enumerator.new do |enum|
+          Neovim.ui do |ui|
+            ui.dimensions = [10, 10]
 
-          ui.backend(&backend_config)
+            ui.backend(&backend_config)
 
-          ui.frontend do |frontend|
-            frontend.attach(rd)
-          end
+            ui.frontend do |frontend|
+              frontend.attach(rd)
+            end
 
-          ui.on(:redraw) do |message|
-            Fiber.yield(:redraw, message)
-          end
+            ui.on(:redraw) do |event|
+              enum << event
+            end
 
-          ui.on(:input) do |key|
-            Fiber.yield(:input, key)
-          end
+            ui.on(:input) do |event|
+              enum << event
+            end
+          end.run
         end
       end
 
       it "yields redraw events" do
-        2.times do
-          type, event = fiber.resume
-          expect(type).to eq(:redraw)
-          expect(event.method_name).to eq("redraw")
+        expect(events).to be_any do |event|
+          event.name == :resize && event.arguments == [12, 10]
         end
       end
 
       it "yields input events" do
-        2.times { fiber.resume }
+        wr.print("j")
 
-        wr.print("i")
-
-        type, key = fiber.resume
-        expect(type).to eq(:input)
-        expect(key).to eq("i")
+        expect(events).to be_any do |event|
+          event.name == :input && event.arguments == ["j"]
+        end
       end
 
       it "forwards keystrokes to nvim" do
-        2.times { fiber.resume }
+        wr.print("i")
 
-        wr.print("i"); fiber.resume
-
-        type, event = fiber.resume
-        expect(type).to eq(:redraw)
-        expect(event.method_name).to eq("redraw")
+        expect(events).to be_any do |event|
+          event.name == :mode_change && event.arguments.include?("insert")
+        end
       end
     end
 

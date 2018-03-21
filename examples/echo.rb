@@ -4,7 +4,6 @@
 # (as if you were exiting vim, plus an additional `<enter>`)
 #
 require "neovim/ui"
-require "logger"
 
 Neovim.ui do |ui|
   ui.dimensions = [10, 10]
@@ -17,11 +16,11 @@ Neovim.ui do |ui|
     frontend.attach(STDIN)
   end
 
-  ui.on(:redraw) do |message|
-    puts "REDRAW: #{message.arguments.inspect}\r"
+  ui.on(:redraw) do |event|
+    puts "REDRAW: #{event.inspect}\r"
   end
 
-  ui.on(:input) do |key|
-    puts "INPUT: #{key.inspect}\r"
+  ui.on(:input) do |event|
+    puts "INPUT: #{event.inspect}\r"
   end
 end.run

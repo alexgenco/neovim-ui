@@ -16,7 +16,7 @@ module Neovim
       @handlers = handlers
       @session_builder = session_builder
       @input_builder = input_builder
-      @event_queue = Queue.new
+      @queue = Queue.new
     end
 
     def run
@@ -26,21 +26,20 @@ module Neovim
 
           Thread.new do
             session.run do |message|
-              event = Event.redraw(message)
-              @event_queue.enq(event)
+              event = Event.redraw_batch(message, @handlers)
+              @queue.enq(event)
             end
           end
 
           Thread.new do
             loop do
-              event = Event.input(input.getc)
-              @event_queue.enq(event)
+              event = Event.input(input.getc, @handlers)
+              @queue.enq(event)
             end
           end
 
           loop do
-            event = @event_queue.deq
-            event.received(@handlers, session)
+            @queue.deq.call(session)
           end
         end
       end
