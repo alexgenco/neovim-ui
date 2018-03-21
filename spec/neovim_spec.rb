@@ -20,35 +20,41 @@ RSpec.describe Neovim do
             end
 
             ui.on(:redraw) do |event|
-              enum << event
+              enum.yield(:redraw, event)
             end
 
             ui.on(:input) do |event|
-              enum << event
+              enum.yield(:input, event)
             end
           end.run
         end
       end
 
       it "yields redraw events" do
-        expect(events).to be_any do |event|
-          event.name == :resize && event.arguments == [12, 10]
+        expect(events).to be_any do |type, event|
+          type == :redraw &&
+            event.name == :resize &&
+            event.arguments == [12, 10]
         end
       end
 
       it "yields input events" do
         wr.print("j")
 
-        expect(events).to be_any do |event|
-          event.name == :input && event.arguments == ["j"]
+        expect(events).to be_any do |type, event|
+          type == :input &&
+            event.name == :input &&
+            event.arguments == ["j"]
         end
       end
 
       it "forwards keystrokes to nvim" do
         wr.print("i")
 
-        expect(events).to be_any do |event|
-          event.name == :mode_change && event.arguments.include?("insert")
+        expect(events).to be_any do |type, event|
+          type == :redraw &&
+            event.name == :mode_change &&
+            event.arguments.include?("insert")
         end
       end
     end

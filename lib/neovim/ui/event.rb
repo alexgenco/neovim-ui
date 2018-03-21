@@ -15,7 +15,7 @@ module Neovim
         Proc.new do |session|
           event = Event.new(:input, [keyseq])
 
-          handlers[:redraw].each { |handler| handler.call(event) }
+          handlers[:input].each { |handler| handler.call(event) }
 
           event.arguments.each do |key|
             session.notify(:nvim_input, key)
