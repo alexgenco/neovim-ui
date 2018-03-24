@@ -23,12 +23,4 @@ Neovim.ui do |ui|
   ui.on(:redraw, :put) do |event|
     puts "REDRAW (event=put)\r"
   end
-
-  ui.on(:input) do |event|
-    puts "INPUT: #{event.inspect}\r"
-  end
-
-  ui.on(:input, "x") do |event|
-    puts "INPUT (key=x)\r"
-  end
 end.run

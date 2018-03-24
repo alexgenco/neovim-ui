@@ -26,14 +26,6 @@ RSpec.describe Neovim do
             ui.on(:redraw, :resize) do |event|
               enum.yield(:redraw_resize, event)
             end
-
-            ui.on(:input) do |event|
-              enum.yield(:input, event)
-            end
-
-            ui.on(:input, :j) do |event|
-              enum.yield(:input_j, event)
-            end
           end.run
         end
       end
@@ -51,26 +43,6 @@ RSpec.describe Neovim do
           type == :redraw_resize &&
             event.name == :resize &&
             event.arguments == [12, 10]
-        end
-      end
-
-      it "yields input events" do
-        wr.print("j")
-
-        expect(events).to be_any do |type, event|
-          type == :input &&
-            event.name == :input &&
-            event.arguments == ["j"]
-        end
-      end
-
-      it "yields input events by key" do
-        wr.print("j")
-
-        expect(events).to be_any do |type, event|
-          type == :input_j &&
-            event.name == :input &&
-            event.arguments == ["j"]
         end
       end
 

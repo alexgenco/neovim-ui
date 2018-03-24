@@ -11,34 +11,35 @@ module Neovim
   class UI
     attr_reader :dimensions, :handlers
 
-    def initialize(dimensions, handlers, session_builder, input_builder)
+    def initialize(dimensions, handlers, session_yielder, input_yielder)
       @dimensions = dimensions
       @handlers = handlers
-      @session_builder = session_builder
-      @input_builder = input_builder
+      @session_yielder = session_yielder
+      @input_yielder = input_yielder
       @queue = Queue.new
     end
 
     def run
-      @session_builder.call do |session|
-        @input_builder.call do |input|
+      @session_yielder.call do |session|
+        @input_yielder.call do |input|
           session.request(:nvim_ui_attach, *@dimensions, {})
 
           Thread.new do
             session.run do |message|
-              @queue << Event.redraw_batch(message, @handlers)
+              @queue << Proc.new do
+                Event.received(message, @handlers)
+              end
             end
           end
 
           Thread.new do
             loop do
-              @queue << Event.input(input.getc, @handlers)
+              key = input.getc
+              @queue << Proc.new { session.notify(:nvim_input, key) }
             end
           end
 
-          loop do
-            @queue.pop.call(session)
-          end
+          loop { @queue.pop.call }
         end
       end
     rescue IOError => e

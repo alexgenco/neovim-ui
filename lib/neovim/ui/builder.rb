@@ -9,8 +9,8 @@ module Neovim
 
       def initialize(&block)
         @dimensions = ::IO.console.winsize
-        @session_builder = ->() { raise("Must configure a backend") }
-        @input_builder = ->() { raise("Must configure a frontend") }
+        @session_yielder = ->() { raise("Must configure a backend") }
+        @input_yielder = ->() { raise("Must configure a frontend") }
 
         @handlers = ::Hash.new do |hash, key|
           hash[key] = ::Hash.new { |h, k| h[k] = [] }
@@ -24,17 +24,17 @@ module Neovim
       end
 
       def backend(&block)
-        @session_builder = Backend.new(&block).__send__(:session_builder)
+        @session_yielder = Backend.new(&block).__send__(:session_yielder)
       end
 
       def frontend(&block)
-        @input_builder = Frontend.new(&block).__send__(:input_builder)
+        @input_yielder = Frontend.new(&block).__send__(:input_yielder)
       end
 
       private
 
       def build
-        UI.new(@dimensions, @handlers, @session_builder, @input_builder)
+        UI.new(@dimensions, @handlers, @session_yielder, @input_yielder)
       end
 
       class Backend
@@ -43,7 +43,7 @@ module Neovim
         end
 
         def attach_child(argv=[Neovim::Executable.from_env.path])
-          @session_builder = lambda do |&block|
+          @session_yielder = lambda do |&block|
             event_loop = EventLoop.child(Array(argv))
             session = Session.new(event_loop)
 
@@ -52,7 +52,7 @@ module Neovim
         end
 
         def attach_unix(socket_path)
-          @session_builder = lambda do |&block|
+          @session_yielder = lambda do |&block|
             event_loop = EventLoop.unix(socket_path)
             session = Session.new(event_loop)
 
@@ -61,7 +61,7 @@ module Neovim
         end
 
         def attach_tcp(host, port)
-          @session_builder = lambda do |&block|
+          @session_yielder = lambda do |&block|
             event_loop = EventLoop.tcp(host, port)
             session = Session.new(event_loop)
 
@@ -71,7 +71,7 @@ module Neovim
 
         private
 
-        attr_reader :session_builder
+        attr_reader :session_yielder
       end
 
       class Frontend
@@ -80,7 +80,7 @@ module Neovim
         end
 
         def attach(input)
-          @input_builder = lambda do |&block|
+          @input_yielder = lambda do |&block|
             if input.tty? && input.respond_to?(:raw)
               input.raw(&block)
             else
@@ -91,7 +91,7 @@ module Neovim
 
         private
 
-        attr_reader :input_builder
+        attr_reader :input_yielder
       end
     end
   end
