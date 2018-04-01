@@ -16,11 +16,11 @@ Neovim.ui do |ui|
     frontend.attach(STDIN)
   end
 
-  ui.on(:redraw) do |event|
+  ui.redraw do |event|
     puts "REDRAW: #{event.inspect}\r"
   end
 
-  ui.on(:redraw, :put) do |event|
+  ui.redraw(:put) do |event|
     puts "REDRAW (event=put)\r"
   end
 end.run

@@ -9,13 +9,18 @@ require "thread"
 
 module Neovim
   class UI
-    attr_reader :dimensions, :handlers
-
-    def initialize(dimensions, handlers, session_yielder, input_yielder)
+    def initialize(
+      dimensions,
+      redraw_handlers,
+      session_yielder,
+      input_yielder,
+      key_yielder
+    )
       @dimensions = dimensions
-      @handlers = handlers
+      @redraw_handlers = redraw_handlers
       @session_yielder = session_yielder
       @input_yielder = input_yielder
+      @key_yielder = key_yielder
       @queue = Queue.new
     end
 
@@ -26,24 +31,25 @@ module Neovim
 
           Thread.new do
             session.run do |message|
-              @queue << Proc.new do
-                Event.received(message, @handlers)
+              @queue << lambda do
+                Event.received(message, @redraw_handlers)
               end
             end
           end
 
           Thread.new do
             loop do
-              key = input.getc
-              @queue << Proc.new { session.notify(:nvim_input, key) }
+              @key_yielder.call(input) do |key|
+                @queue << lambda do
+                  session.notify(:nvim_input, key)
+                end
+              end
             end
           end
 
           loop { @queue.pop.call }
         end
       end
-    rescue IOError => e
-      warn "Got #{e}, exiting."
     end
   end
 end

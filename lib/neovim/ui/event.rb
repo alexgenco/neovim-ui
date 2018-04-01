@@ -5,11 +5,11 @@ module Neovim
         message.arguments.each do |(name, arguments)|
           event = Event.new(name.to_sym, arguments)
 
-          handlers[:redraw][:__all__].each do |handler|
+          handlers[:__all__].each do |handler|
             handler.call(event)
           end
 
-          handlers[:redraw][name.to_sym].each do |handler|
+          handlers[name.to_sym].each do |handler|
             handler.call(event)
           end
         end

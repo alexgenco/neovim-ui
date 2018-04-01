@@ -1,14 +1,13 @@
 require "fileutils"
 require "socket"
+require "thread"
 
 RSpec.describe Neovim do
   describe ".ui" do
     shared_context :event_handling do
-      let(:pipe) { IO.pipe }
-      let(:rd) { pipe[0] }
-      let(:wr) { pipe[1] }
+      let(:inputs) { Queue.new }
 
-      let(:events) do
+      let!(:events) do
         Enumerator.new do |enum|
           Neovim.ui do |ui|
             ui.dimensions = [10, 10]
@@ -16,14 +15,16 @@ RSpec.describe Neovim do
             ui.backend(&backend_config)
 
             ui.frontend do |frontend|
-              frontend.attach(rd)
+              frontend.read_key do |_input_stream|
+                inputs.pop
+              end
             end
 
-            ui.on(:redraw) do |event|
+            ui.redraw do |event|
               enum.yield(:redraw, event)
             end
 
-            ui.on(:redraw, :resize) do |event|
+            ui.redraw(:resize) do |event|
               enum.yield(:redraw_resize, event)
             end
           end.run
@@ -47,7 +48,7 @@ RSpec.describe Neovim do
       end
 
       it "forwards keystrokes to nvim" do
-        wr.print("i")
+        inputs.enq("i")
 
         expect(events).to be_any do |type, event|
           type == :redraw &&
@@ -85,7 +86,7 @@ RSpec.describe Neovim do
 
             spec.run
           ensure
-            Process.kill(:KILL, nvim_pid)
+            Process.kill(:TERM, nvim_pid)
             Process.waitpid(nvim_pid)
           end
         end
@@ -123,7 +124,7 @@ RSpec.describe Neovim do
 
             spec.run
           ensure
-            Process.kill(:KILL, nvim_pid)
+            Process.kill(:TERM, nvim_pid)
             Process.waitpid(nvim_pid)
           end
         end
